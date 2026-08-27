@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Tenant dashboard')
+@section('description', 'View your current bill, payment history, and announcements for your A6 Apartments unit.')
 @section('eyebrow', 'Tenant workspace')
 @section('heading', 'Dashboard')
 

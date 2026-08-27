@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Add payable')
+@section('description', 'Create a new bill or payable for an A6 Apartments tenant.')
 @section('eyebrow', 'Payables')
 @section('heading', 'Add payable')
 

@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Room '.$room->room_number)
+@section('description', 'Room '.$room->room_number.' occupancy, tenants, and billing details at A6 Apartments.')
 @section('eyebrow', 'Rooms')
 @section('heading', 'Room info')
 

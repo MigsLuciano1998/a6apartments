@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Edit admin')
+@section('description', 'Update a staff account for the A6 Apartments monitoring system.')
 @section('eyebrow', 'Admins')
 @section('heading', 'Edit admin')
 

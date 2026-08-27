@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', $admin->name)
+@section('description', 'Staff profile and access details for '.$admin->name.' at A6 Apartments.')
 @section('eyebrow', 'Admins')
 @section('heading', 'Admin info')
 

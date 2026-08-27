@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Add expense')
+@section('description', 'Record a new operating expense for A6 Apartments.')
 @section('eyebrow', 'Expenses')
 @section('heading', 'Add expense')
 

@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', $payable->title)
+@section('description', $payable->title.' billing details and payment status at A6 Apartments.')
 @section('eyebrow', 'Payables')
 @section('heading', 'Payable info')
 

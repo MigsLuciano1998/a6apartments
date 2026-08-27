@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Edit tenant')
+@section('description', 'Update tenant details and access for A6 Apartments.')
 @section('eyebrow', 'Tenants')
 @section('heading', 'Edit tenant')
 

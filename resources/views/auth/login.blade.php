@@ -1,6 +1,7 @@
 @extends('layouts.guest')
 
 @section('title', 'Sign in')
+@section('description', 'Sign in to A6 Apartments to manage rooms, tenants, bills, payments, and announcements.')
 
 @section('content')
     <p class="text-sm font-medium text-teal-700">Welcome back</p>

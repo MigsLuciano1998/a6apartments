@@ -1,6 +1,7 @@
 @extends('layouts.guest')
 
 @section('title', 'Tenant registration')
+@section('description', 'Create a tenant account at A6 Apartments to access your room, bills, payments, and announcements.')
 
 @section('content')
     <p class="text-sm font-medium text-teal-700">Tenant registration</p>

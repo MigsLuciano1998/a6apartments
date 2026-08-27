@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Announcements')
+@section('description', 'Manage published announcements for A6 Apartments tenants and staff.')
 @section('eyebrow', 'Staff workspace')
 @section('heading', 'Announcements')
 

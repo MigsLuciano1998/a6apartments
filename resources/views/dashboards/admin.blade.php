@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', $roleLabel.' dashboard')
+@section('description', 'Staff dashboard for A6 Apartments with outstanding balances, collections, expenses, and due payments.')
 @section('eyebrow', 'Staff workspace')
 @section('heading', $roleLabel.' dashboard')
 

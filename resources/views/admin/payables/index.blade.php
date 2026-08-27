@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Payables')
+@section('description', 'Manage tenant bills, balances, and due dates at A6 Apartments.')
 @section('eyebrow', 'Staff workspace')
 @section('heading', 'Payables')
 

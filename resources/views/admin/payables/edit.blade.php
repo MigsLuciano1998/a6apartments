@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Edit payable')
+@section('description', 'Update a bill or payable for an A6 Apartments tenant.')
 @section('eyebrow', 'Payables')
 @section('heading', 'Edit payable')
 
