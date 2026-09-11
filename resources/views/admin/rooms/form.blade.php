@@ -10,7 +10,7 @@
 
 <div>
     <label for="room_name" class="mb-1.5 block text-sm font-medium">Room name</label>
-    <input id="room_name" name="room_name" type="text" value="{{ old('room_name', $room?->room_name) }}" required class="w-full rounded-2xl border border-stone-200 px-4 py-3 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4">
+    <input id="room_name" name="room_name" type="text" value="{{ old('room_name', $room?->room_name) }}"  class="w-full rounded-2xl border border-stone-200 px-4 py-3 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4">
     @error('room_name')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
 </div>
 
