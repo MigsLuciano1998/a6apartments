@@ -118,7 +118,7 @@ function paymentsPage() {
                     <input type="checkbox" name="billing_ids[]" value="${item.billing_id}" data-amount="${item.amount}" class="mt-1 h-4 w-4 rounded border-stone-300 text-teal-700 focus:ring-teal-700">
                     <span class="flex-1">
                         <span class="block text-sm font-medium">${item.title}</span>
-                        <span class="block text-xs text-slate-500">${item.frequency}${item.is_rent ? ' · Rent' : ' · Bill'}</span>
+                        <span class="block text-xs text-slate-500">${item.frequency}</span>
                     </span>
                     <span class="text-sm font-semibold tabular-nums">${formatAmount(item.amount)}</span>
                 </label>
@@ -132,7 +132,7 @@ function paymentsPage() {
     const loadPayables = (tenantId) => {
         if (!tenantId) {
             list.innerHTML = '<p class="text-sm text-slate-500">Select a tenant to load payables.</p>';
-            subtitle.textContent = 'Select unpaid payables for this month.';
+            subtitle.textContent = 'Select unpaid rent for this month, plus unpaid water and electricity from any month.';
             refreshPaymentUi();
             return;
         }

@@ -10,7 +10,7 @@
         $roomPayables = $tenant->currentAssignment?->room?->roomPayables ?? collect();
         $currentRoom = $tenant->currentAssignment?->room;
         $currentBillings = ($tenant->currentAssignment?->roomBillings ?? collect())
-            ->filter(fn ($billing) => $billing->due_date?->isSameMonth(now()));
+            ->filter(fn ($billing) => $billing->isPublished() && $billing->due_date?->isSameMonth(now()));
         $billingsByPayable = $currentBillings->keyBy('room_payables_id');
         $amountDue = (float) $currentBillings->sum(fn ($billing) => $billing->amountDue());
         $tenantTypeLabel = $tenant->tenant_type === 'bills_only' ? 'Bills Only Tenant' : 'Regular Tenant';
@@ -75,7 +75,7 @@
                     <tbody class="divide-y divide-stone-100">
                         @forelse ($roomPayables as $roomPayable)
                             @php
-                                $billing = $billingsByPayable->get($roomPayable->id);
+                                $billing = $roomPayable->latestBilling();
                                 $paymentStatus = $billing?->paymentStatus();
                             @endphp
                             <tr>
@@ -83,6 +83,9 @@
                                     {{ $roomPayable->payable?->title ?? '—' }}
                                     @if ($roomPayable->isCurrent())
                                         <span class="ml-2 inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-800">Current</span>
+                                    @endif
+                                    @if ($roomPayable->payable?->isMetered())
+                                        <span class="mt-1 block text-xs font-normal text-slate-500">{{ $roomPayable->periodLabel() }}</span>
                                     @endif
                                 </td>
                                 <td class="px-4 py-3">{{ number_format((float) $roomPayable->amount, 2) }}</td>
@@ -122,7 +125,7 @@
             @php
                 $previousBillings = $tenant->roomAssignments
                     ->flatMap->roomBillings
-                    ->filter(fn ($billing) => $billing->due_date?->lt(now()->startOfMonth()) && $billing->amountDue() > 0)
+                    ->filter(fn ($billing) => $billing->isPublished() && $billing->due_date?->lt(now()->startOfMonth()) && $billing->amountDue() > 0)
                     ->sortBy('due_date');
             @endphp
             <div class="mt-8 rounded-[28px] border border-stone-200 bg-white p-6 shadow-sm sm:p-8">

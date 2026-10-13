@@ -20,6 +20,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <a href="{{ route('admin.rooms.edit', $room) }}" class="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:border-teal-700 hover:text-teal-800">Edit</a>
+                <a href="{{ route('admin.rooms.billing', $room) }}" class="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:border-teal-700 hover:text-teal-800">Billing</a>
                 <a href="{{ route('admin.rooms.index') }}" class="rounded-2xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Back to rooms</a>
             </div>
         </div>
@@ -128,89 +129,26 @@
                 <div>
                     <h3 class="text-lg font-semibold">Room payables</h3>
                     <p class="mt-1 text-sm text-slate-500">
-                        Assign bill types from Payables to this room. Recurring bills are monthly; one-time bills are charged once.
+                        Assign bill types from Payables to this room. Enter monthly readings and publish the bill on the Billing page.
                     </p>
                 </div>
                 <a href="{{ route('admin.payables.create') }}" class="text-sm font-medium text-teal-800 hover:underline">Manage payable types</a>
             </div>
 
             @if ($editingRoomPayable)
-                <form method="POST" action="{{ route('admin.rooms.payables.update', [$room, $editingRoomPayable]) }}" class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <form method="POST" action="{{ route('admin.rooms.payables.update', [$room, $editingRoomPayable]) }}" data-room-payable-form class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     @csrf
                     @method('PUT')
-                    <div>
-                        <label for="payables_id" class="mb-1.5 block text-sm font-medium">Payable</label>
-                        <select id="payables_id" name="payables_id" required class="w-full rounded-2xl border border-stone-200 bg-white px-4 py-2.5 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4">
-                            @foreach ($availablePayables as $payable)
-                                <option value="{{ $payable->id }}" @selected((int) old('payables_id', $editingRoomPayable->payables_id) === $payable->id)>{{ $payable->title }}</option>
-                            @endforeach
-                        </select>
-                        @error('payables_id')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label for="amount" class="mb-1.5 block text-sm font-medium">Amount</label>
-                        <input id="amount" name="amount" type="number" step="0.01" min="0" value="{{ old('amount', $editingRoomPayable->amount) }}" required class="w-full rounded-2xl border border-stone-200 px-4 py-2.5 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4">
-                        @error('amount')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label for="frequency" class="mb-1.5 block text-sm font-medium">Billing</label>
-                        <select id="frequency" name="frequency" required class="w-full rounded-2xl border border-stone-200 bg-white px-4 py-2.5 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4">
-                            <option value="recurring" @selected(old('frequency', $editingRoomPayable->frequency) === 'recurring')>Recurring (monthly)</option>
-                            <option value="one_time" @selected(old('frequency', $editingRoomPayable->frequency) === 'one_time')>One time only</option>
-                        </select>
-                        @error('frequency')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label for="start_date" class="mb-1.5 block text-sm font-medium">Start date</label>
-                        <input id="start_date" name="start_date" type="date" value="{{ old('start_date', $editingRoomPayable->start_date?->format('Y-m-d')) }}" required class="w-full rounded-2xl border border-stone-200 px-4 py-2.5 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4">
-                        @error('start_date')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label for="end_date" class="mb-1.5 block text-sm font-medium">End date <span class="font-normal text-slate-400">optional</span></label>
-                        <input id="end_date" name="end_date" type="date" value="{{ old('end_date', $editingRoomPayable->end_date?->format('Y-m-d')) }}" class="w-full rounded-2xl border border-stone-200 px-4 py-2.5 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4">
-                        @error('end_date')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
-                    </div>
+                    @include('admin.rooms.payable-form-fields')
                     <div class="flex items-end gap-2">
                         <button type="submit" class="rounded-2xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Update</button>
                         <a href="{{ route('admin.rooms.show', $room) }}" class="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:border-teal-700 hover:text-teal-800">Cancel</a>
                     </div>
                 </form>
             @else
-                <form method="POST" action="{{ route('admin.rooms.payables.store', $room) }}" class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <form method="POST" action="{{ route('admin.rooms.payables.store', $room) }}" data-room-payable-form class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     @csrf
-                    <div>
-                        <label for="payables_id" class="mb-1.5 block text-sm font-medium">Payable</label>
-                        <select id="payables_id" name="payables_id" required @disabled($availablePayables->isEmpty()) class="w-full rounded-2xl border border-stone-200 bg-white px-4 py-2.5 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4 disabled:cursor-not-allowed disabled:opacity-50">
-                            <option value="">Select payable</option>
-                            @foreach ($availablePayables as $payable)
-                                <option value="{{ $payable->id }}" @selected((int) old('payables_id') === $payable->id)>{{ $payable->title }}</option>
-                            @endforeach
-                        </select>
-                        @error('payables_id')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label for="amount" class="mb-1.5 block text-sm font-medium">Amount</label>
-                        <input id="amount" name="amount" type="number" step="0.01" min="0" value="{{ old('amount') }}" required @disabled($availablePayables->isEmpty()) class="w-full rounded-2xl border border-stone-200 px-4 py-2.5 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4 disabled:cursor-not-allowed disabled:opacity-50">
-                        @error('amount')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label for="frequency" class="mb-1.5 block text-sm font-medium">Billing</label>
-                        <select id="frequency" name="frequency" required @disabled($availablePayables->isEmpty()) class="w-full rounded-2xl border border-stone-200 bg-white px-4 py-2.5 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4 disabled:cursor-not-allowed disabled:opacity-50">
-                            <option value="recurring" @selected(old('frequency', 'recurring') === 'recurring')>Recurring (monthly)</option>
-                            <option value="one_time" @selected(old('frequency') === 'one_time')>One time only</option>
-                        </select>
-                        @error('frequency')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label for="start_date" class="mb-1.5 block text-sm font-medium">Start date</label>
-                        <input id="start_date" name="start_date" type="date" value="{{ old('start_date', now()->toDateString()) }}" required @disabled($availablePayables->isEmpty()) class="w-full rounded-2xl border border-stone-200 px-4 py-2.5 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4 disabled:cursor-not-allowed disabled:opacity-50">
-                        @error('start_date')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
-                    </div>
-                    <div>
-                        <label for="end_date" class="mb-1.5 block text-sm font-medium">End date <span class="font-normal text-slate-400">optional</span></label>
-                        <input id="end_date" name="end_date" type="date" value="{{ old('end_date') }}" @disabled($availablePayables->isEmpty()) class="w-full rounded-2xl border border-stone-200 px-4 py-2.5 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4 disabled:cursor-not-allowed disabled:opacity-50">
-                        @error('end_date')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
-                    </div>
+                    @include('admin.rooms.payable-form-fields')
                     <div class="flex items-end">
                         <button type="submit" @disabled($availablePayables->isEmpty()) class="w-full rounded-2xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50">
                             Add payable
@@ -227,15 +165,19 @@
                     <thead class="bg-[#fbf8f3] text-xs uppercase tracking-wider text-slate-500">
                         <tr>
                             <th class="px-4 py-3 font-medium">Payable</th>
+                            <th class="px-4 py-3 font-medium">Period</th>
                             <th class="px-4 py-3 font-medium">Amount</th>
                             <th class="px-4 py-3 font-medium">Billing</th>
-                            <th class="px-4 py-3 font-medium">Start</th>
-                            <th class="px-4 py-3 font-medium">End</th>
+                            <th class="px-4 py-3 font-medium">Payment</th>
                             <th class="px-4 py-3 font-medium"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-stone-100">
                         @forelse ($room->roomPayables as $roomPayable)
+                            @php
+                                $billing = $roomPayable->latestBilling();
+                                $paymentStatus = $billing?->paymentStatus();
+                            @endphp
                             <tr>
                                 <td class="px-4 py-3 font-medium">
                                     @if ($roomPayable->payable)
@@ -246,15 +188,31 @@
                                     @if ($roomPayable->isCurrent())
                                         <span class="ml-2 inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-800">Current</span>
                                     @endif
+                                    @if ($roomPayable->payable?->isMetered() && $roomPayable->current_reading !== null)
+                                        <span class="mt-1 block text-xs font-normal text-slate-500">
+                                            Reading {{ number_format((float) $roomPayable->previous_reading, 2) }} → {{ number_format((float) $roomPayable->current_reading, 2) }}
+                                        </span>
+                                    @endif
                                 </td>
+                                <td class="px-4 py-3">{{ $roomPayable->periodLabel() }}</td>
                                 <td class="px-4 py-3">{{ number_format((float) $roomPayable->amount, 2) }}</td>
                                 <td class="px-4 py-3">{{ $roomPayable->frequencyLabel() }}</td>
-                                <td class="px-4 py-3">{{ $roomPayable->start_date?->format('M d, Y') }}</td>
-                                <td class="px-4 py-3">{{ $roomPayable->end_date?->format('M d, Y') ?: '—' }}</td>
+                                <td class="px-4 py-3">
+                                    @if ($paymentStatus === 'paid')
+                                        <span class="inline-flex rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-800">Paid</span>
+                                    @elseif ($paymentStatus === 'partial')
+                                        <span class="block text-sm font-medium text-amber-800">Partial</span>
+                                        <span class="mt-0.5 block text-xs text-slate-500">Remaining {{ number_format($billing->amountDue(), 2) }}</span>
+                                    @elseif ($paymentStatus === 'unpaid')
+                                        <span class="inline-flex rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-slate-600">Unpaid</span>
+                                    @else
+                                        <span class="text-slate-400">—</span>
+                                    @endif
+                                </td>
                                 <td class="px-4 py-3">
                                     <div class="flex items-center justify-end gap-2">
                                         <a href="{{ route('admin.rooms.show', ['room' => $room, 'edit_payable' => $roomPayable->id]) }}" class="rounded-full border border-stone-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-teal-700 hover:text-teal-800">Edit</a>
-                                        @if ($roomPayable->isCurrent())
+                                        @if ($roomPayable->isCurrent() && $roomPayable->isRecurring())
                                             <form method="POST" action="{{ route('admin.rooms.payables.end', [$room, $roomPayable]) }}" onsubmit="return confirm('End this payable for the room?')">
                                                 @csrf
                                                 <button type="submit" class="rounded-full border border-stone-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-teal-700 hover:text-teal-800">End</button>
@@ -279,7 +237,7 @@
                             <tr>
                                 <td class="px-4 py-3 font-semibold">Total to be paid</td>
                                 <td class="px-4 py-3 font-semibold">{{ number_format($room->amountToBePaid(), 2) }}</td>
-                                <td colspan="4" class="px-4 py-3 text-sm text-slate-500">Current payables only (recurring monthly + one-time).</td>
+                                <td colspan="4" class="px-4 py-3 text-sm text-slate-500">Current charges only. Record monthly water and electricity payments on the Payments page.</td>
                             </tr>
                         </tfoot>
                     @endif

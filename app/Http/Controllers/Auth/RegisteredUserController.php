@@ -28,12 +28,16 @@ class RegisteredUserController extends Controller
             'phone' => ['required', 'string', 'max:30'],
             'tenant_type' => ['required', 'in:regular,bills_only'],
             'password' => ['required', 'confirmed', Password::min(8)],
+            'privacy_consent' => ['accepted'],
         ]);
+
+        unset($validated['privacy_consent']);
 
         $user = User::query()->create([
             ...$validated,
             'role' => 'tenant',
             'status' => 'active',
+            'privacy_consent_at' => now(),
         ]);
 
         Auth::login($user);

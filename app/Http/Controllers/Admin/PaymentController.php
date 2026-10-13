@@ -6,11 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\RoomBilling;
 use App\Models\User;
-use App\Services\MonthlyBillingService;
 use App\Services\OutstandingBalanceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -19,16 +19,11 @@ use Illuminate\View\View;
 class PaymentController extends Controller
 {
     public function __construct(
-        private MonthlyBillingService $monthlyBillingService,
         private OutstandingBalanceService $outstandingBalanceService,
     ) {}
 
     public function index(Request $request): View
     {
-        if (! $request->ajax()) {
-            $this->monthlyBillingService->syncForMonth();
-        }
-
         $search = trim((string) $request->query('q', ''));
         $month = now();
         $tenants = $this->filteredTenants($search);
@@ -46,8 +41,15 @@ class PaymentController extends Controller
             ->get();
 
         $paymentsMade = $this->paymentsMadeThisMonth($month);
-        $previousBalances = $this->outstandingBalanceService->previousBalances($month);
-        $previousTotal = $this->outstandingBalanceService->totalRemaining($previousBalances);
+        $allPreviousBalances = $this->outstandingBalanceService->previousBalances($month)
+            ->sortByDesc(fn (RoomBilling $billing) => sprintf(
+                '%s-%020d',
+                $billing->due_date?->format('Y-m-d') ?? '0000-00-00',
+                $billing->id
+            ))
+            ->values();
+        $previousTotal = $this->outstandingBalanceService->totalRemaining($allPreviousBalances);
+        $previousBalances = $this->paginatePreviousBalances($request, $allPreviousBalances);
 
         return view('admin.payments.index', compact(
             'tenants',
@@ -64,8 +66,6 @@ class PaymentController extends Controller
     public function tenantPayables(User $tenant): JsonResponse
     {
         abort_unless($tenant->role === 'tenant', 404);
-
-        $this->monthlyBillingService->syncForMonth();
 
         $assignment = $tenant->currentAssignment;
 
@@ -85,12 +85,12 @@ class PaymentController extends Controller
         ]);
 
         $payables = $assignment->roomBillings
-            ->filter(fn (RoomBilling $billing) => $this->isCurrentMonth($billing) && ! $billing->isPaid())
+            ->filter(fn (RoomBilling $billing) => $this->canRecordPayment($billing))
             ->map(fn (RoomBilling $billing) => [
                 'billing_id' => $billing->id,
                 'title' => $billing->roomPayable?->payable?->title ?? 'Payable',
                 'amount' => $billing->amountDue(),
-                'frequency' => $billing->roomPayable?->frequencyLabel() ?? '',
+                'frequency' => $this->paymentLabel($billing),
                 'is_rent' => $billing->isRent(),
             ])
             ->values();
@@ -99,7 +99,7 @@ class PaymentController extends Controller
             'tenant' => ['id' => $tenant->id, 'name' => $tenant->name],
             'room' => $assignment->room?->room_number,
             'payables' => $payables,
-            'message' => $payables->isEmpty() ? 'All current-month payables are already paid.' : null,
+            'message' => $payables->isEmpty() ? 'No unpaid payables to record.' : null,
         ]);
     }
 
@@ -146,7 +146,7 @@ class PaymentController extends Controller
                     continue;
                 }
 
-                if (! $this->isCurrentMonth($billing) || $billing->isPaid()) {
+                if (! $this->canRecordPayment($billing)) {
                     continue;
                 }
 
@@ -209,6 +209,7 @@ class PaymentController extends Controller
     private function monthTotals($month): array
     {
         $billings = RoomBilling::query()
+            ->published()
             ->with(['roomPayable.payable', 'payments'])
             ->whereBetween('due_date', [
                 $month->copy()->startOfMonth()->toDateString(),
@@ -232,7 +233,7 @@ class PaymentController extends Controller
             ->where('role', 'tenant')
             ->with([
                 'currentAssignment.room',
-                'currentAssignment.roomBillings' => fn ($query) => $query->whereBetween('due_date', [
+                'currentAssignment.roomBillings' => fn ($query) => $query->published()->whereBetween('due_date', [
                     $month->copy()->startOfMonth()->toDateString(),
                     $month->copy()->endOfMonth()->toDateString(),
                 ]),
@@ -265,6 +266,51 @@ class PaymentController extends Controller
         }
 
         return $billing->due_date->isSameMonth(now());
+    }
+
+    private function canRecordPayment(RoomBilling $billing): bool
+    {
+        if (! $billing->isPublished() || $billing->isPaid()) {
+            return false;
+        }
+
+        if ($this->isCurrentMonth($billing)) {
+            return true;
+        }
+
+        return (bool) $billing->roomPayable?->payable?->isMetered();
+    }
+
+    private function paymentLabel(RoomBilling $billing): string
+    {
+        $frequency = $billing->roomPayable?->frequencyLabel() ?? 'Bill';
+
+        if ($billing->roomPayable?->payable?->isMetered()) {
+            return $frequency.' · '.$billing->periodLabel();
+        }
+
+        return $frequency.($billing->isRent() ? ' · Rent' : ' · Bill');
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, RoomBilling>  $balances
+     */
+    private function paginatePreviousBalances(Request $request, $balances): LengthAwarePaginator
+    {
+        $perPage = 10;
+        $page = max(1, (int) $request->query('balances_page', 1));
+
+        return (new LengthAwarePaginator(
+            $balances->forPage($page, $perPage)->values(),
+            $balances->count(),
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'pageName' => 'balances_page',
+                'fragment' => 'previous-balances',
+            ]
+        ))->withQueryString();
     }
 
     private function paymentsMadeThisMonth($month)

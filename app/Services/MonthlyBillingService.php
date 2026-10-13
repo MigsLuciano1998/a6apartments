@@ -35,9 +35,12 @@ class MonthlyBillingService
                 RoomBilling::query()->create([
                     'room_assignment_id' => $assignment->id,
                     'room_payables_id' => $roomPayable->id,
+                    'billed_amount' => $roomPayable->amount,
                     'due_date' => $dueDate,
                     'status' => $status,
                 ]);
+
+                $this->promoteMeterReading($roomPayable);
             }
         }
     }
@@ -71,5 +74,22 @@ class MonthlyBillingService
             ->where('room_assignment_id', $assignment->id)
             ->whereBetween('due_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
             ->exists();
+    }
+
+    private function promoteMeterReading(RoomPayable $roomPayable): void
+    {
+        $roomPayable->loadMissing('payable');
+
+        if ($roomPayable->frequency === 'one_time' || ! $roomPayable->payable?->isMetered() || $roomPayable->current_reading === null) {
+            return;
+        }
+
+        if ((float) $roomPayable->previous_reading === (float) $roomPayable->current_reading) {
+            return;
+        }
+
+        $roomPayable->update([
+            'previous_reading' => $roomPayable->current_reading,
+        ]);
     }
 }

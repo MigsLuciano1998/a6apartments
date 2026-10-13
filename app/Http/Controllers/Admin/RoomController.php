@@ -54,6 +54,7 @@ class RoomController extends Controller
                 ->orderByRaw('(end_date is null or end_date > ?) desc', [now()->toDateString()])
                 ->latest('start_date'),
             'roomPayables.payable',
+            'roomPayables.roomBillings.payments',
             'roomAssignments' => fn ($query) => $query->latest('start_date'),
             'roomAssignments.user',
             'roomAssignments.roomBillings.payments',

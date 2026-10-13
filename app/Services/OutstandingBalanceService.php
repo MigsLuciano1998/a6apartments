@@ -18,6 +18,7 @@ class OutstandingBalanceService
     public function previousBalances(?Carbon $month = null): Collection
     {
         return RoomBilling::query()
+            ->published()
             ->with([
                 'roomPayable.payable',
                 'payments',
@@ -66,7 +67,7 @@ class OutstandingBalanceService
 
         return (float) $assignment->roomBillings
             ->filter(function (RoomBilling $billing) use ($month) {
-                return $billing->due_date?->isSameMonth($month);
+                return $billing->isPublished() && $billing->due_date?->isSameMonth($month);
             })
             ->sum(fn (RoomBilling $billing) => $billing->amountDue());
     }
@@ -75,7 +76,8 @@ class OutstandingBalanceService
     {
         return (float) $billings
             ->filter(function (RoomBilling $billing) use ($monthStart) {
-                return $billing->due_date
+                return $billing->isPublished()
+                    && $billing->due_date
                     && $billing->due_date->lt($monthStart)
                     && $billing->amountDue() > 0;
             })

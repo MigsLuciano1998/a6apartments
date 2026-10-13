@@ -26,6 +26,7 @@ class User extends Authenticatable
         'role',
         'tenant_type',
         'status',
+        'privacy_consent_at',
         'password',
     ];
 
@@ -44,6 +45,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'privacy_consent_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

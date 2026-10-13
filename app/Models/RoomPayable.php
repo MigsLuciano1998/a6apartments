@@ -12,6 +12,9 @@ class RoomPayable extends Model
         'room_number_id',
         'payables_id',
         'amount',
+        'previous_reading',
+        'current_reading',
+        'billing_formula',
         'frequency',
         'start_date',
         'end_date',
@@ -24,6 +27,8 @@ class RoomPayable extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'previous_reading' => 'decimal:2',
+            'current_reading' => 'decimal:2',
             'start_date' => 'date',
             'end_date' => 'date',
         ];
@@ -66,5 +71,15 @@ class RoomPayable extends Model
     public function frequencyLabel(): string
     {
         return $this->isRecurring() ? 'Recurring' : 'One time';
+    }
+
+    public function periodLabel(): string
+    {
+        return $this->start_date?->format('F Y') ?? '—';
+    }
+
+    public function latestBilling(): ?RoomBilling
+    {
+        return $this->roomBillings->sortByDesc('due_date')->first();
     }
 }

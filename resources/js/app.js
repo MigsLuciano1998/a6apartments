@@ -3,3 +3,4 @@ import './live-search';
 import './sidebar';
 import './payments';
 import './expenses';
+import './room-payables';

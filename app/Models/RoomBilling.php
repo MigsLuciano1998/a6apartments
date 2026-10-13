@@ -11,8 +11,12 @@ class RoomBilling extends Model
     protected $fillable = [
         'room_assignment_id',
         'room_payables_id',
+        'billed_amount',
+        'previous_reading',
+        'current_reading',
         'due_date',
         'status',
+        'published_at',
     ];
 
     /**
@@ -22,6 +26,10 @@ class RoomBilling extends Model
     {
         return [
             'due_date' => 'date',
+            'billed_amount' => 'decimal:2',
+            'previous_reading' => 'decimal:2',
+            'current_reading' => 'decimal:2',
+            'published_at' => 'datetime',
         ];
     }
 
@@ -42,6 +50,10 @@ class RoomBilling extends Model
 
     public function amountBilled(): float
     {
+        if ($this->billed_amount !== null) {
+            return (float) $this->billed_amount;
+        }
+
         return (float) ($this->roomPayable?->amount ?? 0);
     }
 
@@ -79,6 +91,16 @@ class RoomBilling extends Model
         }
 
         return 'unpaid';
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->published_at !== null;
+    }
+
+    public function scopePublished($query)
+    {
+        return $query->whereNotNull('published_at');
     }
 
     public function isRent(): bool

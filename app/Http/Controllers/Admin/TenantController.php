@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Services\MonthlyBillingService;
 use App\Services\OutstandingBalanceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +14,6 @@ use Illuminate\View\View;
 class TenantController extends Controller
 {
     public function __construct(
-        private MonthlyBillingService $monthlyBillingService,
         private OutstandingBalanceService $outstandingBalanceService,
     ) {}
     public function index(Request $request): View
@@ -55,10 +53,6 @@ class TenantController extends Controller
 
         $tenant->load('currentAssignment');
 
-        if ($tenant->currentAssignment) {
-            $this->monthlyBillingService->syncForMonth();
-        }
-
         $month = now();
 
         $tenant->load([
@@ -70,6 +64,7 @@ class TenantController extends Controller
                 ->orderByRaw('(end_date is null or end_date > ?) desc', [now()->toDateString()])
                 ->latest('start_date'),
             'currentAssignment.room.roomPayables.payable',
+            'currentAssignment.room.roomPayables.roomBillings.payments',
             'currentAssignment.roomBillings.payments',
         ]);
 

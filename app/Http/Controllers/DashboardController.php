@@ -7,22 +7,18 @@ use App\Models\Payment;
 use App\Models\Room;
 use App\Models\RoomBilling;
 use App\Models\User;
-use App\Services\MonthlyBillingService;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __construct(private MonthlyBillingService $monthlyBillingService) {}
-
     public function admin(): View
     {
-        $this->monthlyBillingService->syncForMonth();
-
         $month = now();
         $monthStart = $month->copy()->startOfMonth();
         $monthEnd = $month->copy()->endOfMonth();
 
         $billings = RoomBilling::query()
+            ->published()
             ->with(['roomPayable.payable', 'payments'])
             ->get();
 
@@ -71,10 +67,6 @@ class DashboardController extends Controller
         $tenant = auth()->user();
         $tenant->load('currentAssignment');
 
-        if ($tenant->currentAssignment) {
-            $this->monthlyBillingService->syncForMonth();
-        }
-
         $month = now();
 
         $tenant->load([
@@ -86,7 +78,7 @@ class DashboardController extends Controller
             'currentAssignment.roomBillings.roomPayable.payable',
         ]);
 
-        $allBillings = $tenant->roomAssignments->flatMap->roomBillings;
+        $allBillings = $tenant->roomAssignments->flatMap->roomBillings->filter(fn ($billing) => $billing->isPublished());
         $currentBillings = $allBillings
             ->filter(fn ($billing) => $billing->due_date?->isSameMonth($month))
             ->sortBy(fn ($billing) => $billing->roomPayable?->payable?->title)

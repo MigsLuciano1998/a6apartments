@@ -64,6 +64,21 @@
             @error('tenant_type')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
         </fieldset>
 
+        <label class="flex items-start gap-3 text-sm leading-6 text-slate-600">
+            <input
+                type="checkbox"
+                name="privacy_consent"
+                value="1"
+                required
+                class="mt-1 h-4 w-4 shrink-0 rounded border-stone-300 text-teal-700 focus:ring-teal-700"
+                {{ old('privacy_consent') ? 'checked' : '' }}
+            >
+            <span>
+                I allow A6 Apartments to use all information I enter on this form in the monitoring system, including for room assignment, billing, payments, and announcements.
+            </span>
+        </label>
+        @error('privacy_consent')<p class="text-sm text-rose-600">{{ $message }}</p>@enderror
+
         <div class="grid gap-4 sm:grid-cols-2">
             <div>
                 <label for="password" class="mb-1.5 block text-sm font-medium">Password</label>

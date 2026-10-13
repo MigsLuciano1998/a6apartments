@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\PayableController;
 use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\RoomBillingController;
 use App\Http\Controllers\Admin\RoomController;
 use App\Http\Controllers\Admin\RoomPayableController;
 use App\Http\Controllers\Admin\TenantController;
@@ -37,6 +38,8 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 
 Route::middleware(['auth', 'role:admin,manager'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
+    Route::get('rooms/{room}/billing', [RoomBillingController::class, 'show'])->name('rooms.billing');
+    Route::post('rooms/{room}/billing', [RoomBillingController::class, 'publish'])->name('rooms.billing.publish');
     Route::resource('rooms', RoomController::class);
     Route::post('rooms/{room}/assign-tenant', [RoomController::class, 'assignTenant'])->name('rooms.assign-tenant');
     Route::post('rooms/{room}/remove-tenant', [RoomController::class, 'removeTenant'])->name('rooms.remove-tenant');
