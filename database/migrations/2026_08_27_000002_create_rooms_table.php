@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('rooms', function (Blueprint $table) {
             $table->id();
             $table->string('room_number')->unique();
-            $table->string('room_name');
+            $table->string('room_name')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->text('remarks')->nullable();
             $table->timestamps();
