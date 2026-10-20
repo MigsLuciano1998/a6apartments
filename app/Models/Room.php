@@ -48,4 +48,9 @@ class Room extends Model
     {
         return (float) $this->currentPayables()->sum('amount');
     }
+
+    public function statusLabel(): string
+    {
+        return $this->status === 'active' ? 'Available' : 'Not available';
+    }
 }

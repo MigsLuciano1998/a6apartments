@@ -72,6 +72,24 @@ class OutstandingBalanceService
             ->sum(fn (RoomBilling $billing) => $billing->amountDue());
     }
 
+    public function previousRemainingForAssignment($assignment): float
+    {
+        if (! $assignment) {
+            return 0.0;
+        }
+
+        return $this->remainingFromBillings(
+            $assignment->roomBillings,
+            now()->startOfMonth(),
+        );
+    }
+
+    public function currentRemainingForTenant(User $tenant): float
+    {
+        return (float) $tenant->currentAssignments
+            ->sum(fn ($assignment) => $this->currentRemainingForAssignment($assignment));
+    }
+
     private function remainingFromBillings(Collection $billings, Carbon $monthStart): float
     {
         return (float) $billings

@@ -97,7 +97,7 @@ class AdminUserController extends Controller
             'last_name' => ['required', 'string', 'max:255'],
             'suffix' => ['nullable', 'string', 'max:20'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($adminId)],
-            'phone' => ['required', 'string', 'max:30'],
+            'phone' => ['required', 'digits_between:1,30'],
             'status' => ['required', 'in:active,inactive'],
             'password' => $password,
         ];

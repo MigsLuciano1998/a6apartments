@@ -101,9 +101,15 @@
                         @endif
                         Announcements
                     </a>
+                    <a href="{{ route('user.edit') }}" class="{{ $navClass(request()->routeIs('user.*')) }}">
+                        @if (request()->routeIs('user.*'))
+                            <span class="h-2 w-2 rounded-full bg-amber-300"></span>
+                        @endif
+                        User
+                    </a>
                 @else
-                    <a href="{{ route('tenant.dashboard') }}" class="{{ $navClass(request()->routeIs('tenant.dashboard')) }}">
-                        @if (request()->routeIs('tenant.dashboard'))
+                    <a href="{{ route('tenant.dashboard') }}" class="{{ $navClass(request()->routeIs('tenant.dashboard') || request()->routeIs('tenant.rooms.billing')) }}">
+                        @if (request()->routeIs('tenant.dashboard') || request()->routeIs('tenant.rooms.billing'))
                             <span class="h-2 w-2 rounded-full bg-amber-300"></span>
                         @endif
                         Dashboard
@@ -119,6 +125,12 @@
                             <span class="h-2 w-2 rounded-full bg-amber-300"></span>
                         @endif
                         Announcements
+                    </a>
+                    <a href="{{ route('user.edit') }}" class="{{ $navClass(request()->routeIs('user.*')) }}">
+                        @if (request()->routeIs('user.*'))
+                            <span class="h-2 w-2 rounded-full bg-amber-300"></span>
+                        @endif
+                        User
                     </a>
                 @endif
             </nav>
@@ -146,13 +158,13 @@
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <div class="hidden text-right sm:block">
+                    <a href="{{ route('user.edit') }}" class="hidden text-right hover:text-teal-800 sm:block">
                         <p class="text-sm font-medium">{{ auth()->user()->name }}</p>
                         <p class="text-xs capitalize text-slate-500">{{ str_replace('_', ' ', auth()->user()->role) }}</p>
-                    </div>
-                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-teal-100 text-sm font-semibold text-teal-800">
+                    </a>
+                    <a href="{{ route('user.edit') }}" class="flex h-10 w-10 items-center justify-center rounded-full bg-teal-100 text-sm font-semibold text-teal-800" aria-label="User page">
                         {{ strtoupper(substr(auth()->user()->first_name, 0, 1).substr(auth()->user()->last_name, 0, 1)) }}
-                    </div>
+                    </a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="rounded-full border border-stone-200 px-3 py-2 text-xs font-medium text-slate-600 transition hover:border-teal-700 hover:text-teal-800">

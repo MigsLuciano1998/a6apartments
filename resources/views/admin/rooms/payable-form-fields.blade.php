@@ -34,7 +34,9 @@
 <div data-standard-fields class="col-span-full grid gap-3 sm:grid-cols-2 lg:grid-cols-3 {{ $isMetered ? 'hidden' : '' }}">
     <div>
         <label for="amount" class="mb-1.5 block text-sm font-medium">Amount</label>
-        <input id="amount" name="amount" type="number" step="0.01" min="0" value="{{ old('amount', $editing?->amount) }}" @disabled($availablePayables->isEmpty()) class="w-full rounded-2xl border border-stone-200 px-4 py-2.5 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4 disabled:cursor-not-allowed disabled:opacity-50">
+        <x-peso-field>
+            <input id="amount" name="amount" type="number" step="0.01" min="0" value="{{ old('amount', $editing?->amount) }}" @disabled($availablePayables->isEmpty()) class="w-full rounded-2xl border border-stone-200 py-2.5 pl-10 pr-4 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4 disabled:cursor-not-allowed disabled:opacity-50">
+        </x-peso-field>
         @error('amount')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
     </div>
     <div>

@@ -42,40 +42,9 @@
         <div class="rounded-[28px] border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
             <h3 class="text-lg font-semibold">Assigned rooms</h3>
             <p class="mt-1 text-sm text-slate-500">Rooms that currently use this payable.</p>
-            <div class="mt-4 overflow-hidden rounded-2xl border border-stone-200">
-                <table class="min-w-full text-left text-sm">
-                    <thead class="bg-[#fbf8f3] text-xs uppercase tracking-wider text-slate-500">
-                        <tr>
-                            <th class="px-4 py-3 font-medium">Room</th>
-                            <th class="px-4 py-3 font-medium">Amount</th>
-                            <th class="px-4 py-3 font-medium">Billing</th>
-                            <th class="px-4 py-3 font-medium">Start</th>
-                            <th class="px-4 py-3 font-medium">End</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-stone-100">
-                        @forelse ($payable->roomPayables as $roomPayable)
-                            <tr>
-                                <td class="px-4 py-3 font-medium">
-                                    @if ($roomPayable->room)
-                                        <a href="{{ route('admin.rooms.show', $roomPayable->room) }}" class="text-teal-800 hover:underline">{{ $roomPayable->room->room_number }}</a>
-                                    @else
-                                        —
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3">{{ number_format((float) $roomPayable->amount, 2) }}</td>
-                                <td class="px-4 py-3">{{ $roomPayable->frequencyLabel() }}</td>
-                                <td class="px-4 py-3">{{ $roomPayable->start_date?->format('M d, Y') ?? '—' }}</td>
-                                <td class="px-4 py-3">{{ $roomPayable->end_date?->format('M d, Y') ?? '—' }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="px-4 py-8 text-center text-slate-500">This payable is not assigned to any room yet.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+            <x-live-table param="rooms_q" table="rooms" page-name="rooms_page" :value="$roomSearch" placeholder="Room number or billing" class="mt-4">
+                @include('admin.payables.room-results')
+            </x-live-table>
         </div>
     </section>
 @endsection

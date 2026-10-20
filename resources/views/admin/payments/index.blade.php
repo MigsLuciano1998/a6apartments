@@ -14,15 +14,15 @@
             </div>
             <div class="rounded-[28px] border border-stone-200 bg-white p-6 shadow-sm">
                 <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Total rent to be paid</p>
-                <p class="mt-2 text-2xl font-semibold tabular-nums text-rose-700">{{ number_format($totals['rent'], 2) }}</p>
+                <p class="mt-2 text-2xl font-semibold tabular-nums text-rose-700">{{ peso($totals['rent']) }}</p>
             </div>
             <div class="rounded-[28px] border border-stone-200 bg-white p-6 shadow-sm">
                 <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Total bills to be paid</p>
-                <p class="mt-2 text-2xl font-semibold tabular-nums text-rose-700">{{ number_format($totals['bills'], 2) }}</p>
+                <p class="mt-2 text-2xl font-semibold tabular-nums text-rose-700">{{ peso($totals['bills']) }}</p>
             </div>
             <div class="rounded-[28px] border border-stone-200 bg-white p-6 shadow-sm">
                 <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Previous balances</p>
-                <p class="mt-2 text-2xl font-semibold tabular-nums text-rose-700">{{ number_format($previousTotal, 2) }}</p>
+                <p class="mt-2 text-2xl font-semibold tabular-nums text-rose-700">{{ peso($previousTotal) }}</p>
             </div>
         </section>
 
@@ -37,137 +37,27 @@
                 </button>
             </div>
 
-            <form method="GET" action="" class="mt-6">
-                <label for="q" class="mb-1.5 block text-sm font-medium">Search tenants</label>
-                <input
-                    id="q"
-                    name="q"
-                    type="search"
-                    value="{{ $search }}"
-                    autocomplete="off"
-                    placeholder="Name or room number"
-                    data-live-search
-                    class="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none ring-teal-700/20 transition focus:border-teal-700 focus:ring-4 sm:max-w-md"
-                >
-            </form>
-
-            <div class="mt-6" data-live-search-results>
+            <x-live-table table="tenants" :value="$search" label="Search tenants" placeholder="Name or room number">
                 @include('admin.payments.results')
-            </div>
+            </x-live-table>
         </section>
 
         <section class="rounded-[28px] border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
             <h2 class="text-2xl font-semibold">Payments made</h2>
             <p class="mt-1 text-sm text-slate-500">Recorded payments for {{ $month->format('F Y') }}.</p>
 
-            <div class="mt-6 overflow-hidden rounded-2xl border border-stone-200">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-left text-sm">
-                        <thead class="bg-[#fbf8f3] text-xs uppercase tracking-wider text-slate-500">
-                            <tr>
-                                <th class="px-4 py-3 font-medium">Date</th>
-                                <th class="px-4 py-3 font-medium">Tenant</th>
-                                <th class="px-4 py-3 font-medium">Room</th>
-                                <th class="px-4 py-3 font-medium">Payable</th>
-                                <th class="px-4 py-3 font-medium">Method</th>
-                                <th class="px-4 py-3 font-medium">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-stone-100">
-                            @forelse ($paymentsMade as $payment)
-                                <tr class="bg-white">
-                                    <td class="px-4 py-3">{{ $payment->payment_date?->format('M d, Y') }}</td>
-                                    <td class="px-4 py-3 font-medium">
-                                        @if ($payment->roomBilling?->roomAssignment?->user?->role === 'tenant')
-                                            <a href="{{ route('admin.tenants.show', $payment->roomBilling->roomAssignment->user) }}" class="text-teal-800 hover:underline">{{ $payment->roomBilling->roomAssignment->user->name }}</a>
-                                        @else
-                                            {{ $payment->roomBilling?->roomAssignment?->user?->name ?? '—' }}
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        @if ($payment->roomBilling?->roomAssignment?->room)
-                                            <a href="{{ route('admin.rooms.show', $payment->roomBilling->roomAssignment->room) }}" class="text-teal-800 hover:underline">{{ $payment->roomBilling->roomAssignment->room->room_number }}</a>
-                                        @else
-                                            —
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3">{{ $payment->roomBilling?->roomPayable?->payable?->title ?? '—' }}</td>
-                                    <td class="px-4 py-3">
-                                        {{ $payment->paymentMethodLabel() }}
-                                        @if ($payment->payment_method === 'online' && $payment->reference_number)
-                                            <span class="block text-xs text-slate-400">{{ $payment->reference_number }}</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3 font-semibold tabular-nums">{{ number_format((float) $payment->amount, 2) }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="px-4 py-10 text-center text-slate-500">No payments recorded this month yet.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            <x-live-table param="payments_q" table="payments" page-name="payments_page" :value="$paymentsSearch" placeholder="Tenant, room, payable, or method">
+                @include('admin.payments.made-results')
+            </x-live-table>
         </section>
 
         <section id="previous-balances" class="rounded-[28px] border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
             <h2 class="text-2xl font-semibold">Previous balances</h2>
             <p class="mt-1 text-sm text-slate-500">Remaining unpaid and partial charges, latest 10 records per page.</p>
 
-            <div class="mt-6 overflow-hidden rounded-2xl border border-stone-200">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-left text-sm">
-                        <thead class="bg-[#fbf8f3] text-xs uppercase tracking-wider text-slate-500">
-                            <tr>
-                                <th class="px-4 py-3 font-medium">Period</th>
-                                <th class="px-4 py-3 font-medium">Tenant</th>
-                                <th class="px-4 py-3 font-medium">Room</th>
-                                <th class="px-4 py-3 font-medium">Payable</th>
-                                <th class="px-4 py-3 font-medium">Remaining</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-stone-100">
-                            @forelse ($previousBalances as $billing)
-                                <tr class="bg-white">
-                                    <td class="px-4 py-3">{{ $billing->periodLabel() }}</td>
-                                    <td class="px-4 py-3 font-medium">
-                                        @if ($billing->roomAssignment?->user?->role === 'tenant')
-                                            <a href="{{ route('admin.tenants.show', $billing->roomAssignment->user) }}" class="text-teal-800 hover:underline">{{ $billing->roomAssignment->user->name }}</a>
-                                        @else
-                                            {{ $billing->roomAssignment?->user?->name ?? '—' }}
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        @if ($billing->roomAssignment?->room)
-                                            <a href="{{ route('admin.rooms.show', $billing->roomAssignment->room) }}" class="text-teal-800 hover:underline">{{ $billing->roomAssignment->room->room_number }}</a>
-                                        @else
-                                            —
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3">{{ $billing->roomPayable?->payable?->title ?? '—' }}</td>
-                                    <td class="px-4 py-3 font-semibold tabular-nums text-rose-700">{{ number_format($billing->amountDue(), 2) }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="px-4 py-10 text-center text-slate-500">No previous remaining balances.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            @if ($previousBalances->total() > 0)
-                <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p class="text-sm text-slate-500">Showing {{ $previousBalances->firstItem() }}–{{ $previousBalances->lastItem() }} of {{ $previousBalances->total() }}</p>
-                    @if ($previousBalances->hasPages())
-                        <div>
-                            {{ $previousBalances->links() }}
-                        </div>
-                    @endif
-                </div>
-            @endif
+            <x-live-table param="balances_q" table="balances" page-name="balances_page" :value="$balancesSearch" placeholder="Tenant, room, payable, or period">
+                @include('admin.payments.balance-results')
+            </x-live-table>
         </section>
     </div>
 
@@ -226,17 +116,19 @@
                 </label>
                 <div class="hidden" data-partial-amount-wrap>
                     <label for="partial_amount" class="mb-1.5 block text-sm font-medium">Amount to pay</label>
-                    <input
-                        id="partial_amount"
-                        name="partial_amount"
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        inputmode="decimal"
-                        data-partial-amount
-                        disabled
-                        class="w-full rounded-2xl border border-stone-200 bg-white px-4 py-2.5 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4"
-                    >
+                    <x-peso-field>
+                        <input
+                            id="partial_amount"
+                            name="partial_amount"
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            inputmode="decimal"
+                            data-partial-amount
+                            disabled
+                            class="w-full rounded-2xl border border-stone-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4"
+                        >
+                    </x-peso-field>
                     <p class="mt-1.5 text-xs text-slate-500" data-partial-balance></p>
                 </div>
             </div>

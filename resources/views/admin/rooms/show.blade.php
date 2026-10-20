@@ -12,9 +12,9 @@
                 <h2 class="text-2xl font-semibold">
                     {{ $room->room_number }}
                     <span class="mx-2 font-normal text-slate-300">|</span>
-                    {{ $room->room_name }}
+                    {{ $room->room_name ?: '—' }}
                     <span class="mx-2 font-normal text-slate-300">|</span>
-                    <span class="inline-flex align-middle rounded-full px-2.5 py-0.5 text-xs font-medium {{ $room->status === 'active' ? 'bg-teal-50 text-teal-800' : 'bg-stone-100 text-slate-600' }}">{{ $room->status }}</span>
+                    <span class="inline-flex align-middle rounded-full px-2.5 py-0.5 text-xs font-medium {{ $room->status === 'active' ? 'bg-teal-50 text-teal-800' : 'bg-stone-100 text-slate-600' }}">{{ $room->statusLabel() }}</span>
                 </h2>
                 <p class="mt-2 text-sm text-slate-600">{{ $room->remarks ?: '—' }}</p>
             </div>
@@ -48,16 +48,16 @@
                     @if ($room->currentAssignment)
                         <div class="sm:text-right" style="min-width: 11rem">
                             <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Remaining this month</p>
-                            <p class="mt-1 text-xl font-semibold tabular-nums {{ $currentRemaining > 0 ? 'text-rose-700' : 'text-slate-700' }}">{{ number_format($currentRemaining, 2) }}</p>
+                            <p class="mt-1 text-xl font-semibold tabular-nums {{ $currentRemaining > 0 ? 'text-rose-700' : 'text-slate-700' }}">{{ peso($currentRemaining) }}</p>
                         </div>
                         <div class="sm:text-right" style="min-width: 11rem; margin-left: 2.5rem">
                             <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Previous balance</p>
-                            <p class="mt-1 text-xl font-semibold tabular-nums {{ $previousBalance > 0 ? 'text-rose-700' : 'text-slate-700' }}">{{ number_format($previousBalance, 2) }}</p>
+                            <p class="mt-1 text-xl font-semibold tabular-nums {{ $previousBalance > 0 ? 'text-rose-700' : 'text-slate-700' }}">{{ peso($previousBalance) }}</p>
                         </div>
                     @elseif ($previousBalance > 0)
                         <div class="sm:text-right" style="min-width: 11rem">
                             <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Previous balance</p>
-                            <p class="mt-1 text-xl font-semibold tabular-nums text-rose-700">{{ number_format($previousBalance, 2) }}</p>
+                            <p class="mt-1 text-xl font-semibold tabular-nums text-rose-700">{{ peso($previousBalance) }}</p>
                         </div>
                     @endif
 
@@ -86,42 +86,13 @@
             </div>
 
             @if (! $room->currentAssignment && $availableTenants->isEmpty())
-                <p class="mt-3 text-sm text-slate-500">There are no available tenants to assign. Add a tenant first, or remove one from another room.</p>
+                <p class="mt-3 text-sm text-slate-500">There are no active tenants to assign. Add a tenant first.</p>
             @endif
 
             <h3 class="mt-8 text-lg font-semibold">Assignment history</h3>
-            <div class="mt-4 overflow-hidden rounded-2xl border border-stone-200">
-                <table class="min-w-full text-left text-sm">
-                    <thead class="bg-[#fbf8f3] text-xs uppercase tracking-wider text-slate-500">
-                        <tr>
-                            <th class="px-4 py-3 font-medium">Tenant</th>
-                            <th class="px-4 py-3 font-medium">Start</th>
-                            <th class="px-4 py-3 font-medium">End</th>
-                            <th class="px-4 py-3 font-medium">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-stone-100">
-                        @forelse ($room->roomAssignments as $assignment)
-                            <tr>
-                                <td class="px-4 py-3 font-medium">
-                                    @if ($assignment->user?->role === 'tenant')
-                                        <a href="{{ route('admin.tenants.show', $assignment->user) }}" class="text-teal-800 hover:underline">{{ $assignment->user->name }}</a>
-                                    @else
-                                        {{ $assignment->user?->name ?? '—' }}
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3">{{ $assignment->start_date?->format('M d, Y') }}</td>
-                                <td class="px-4 py-3">{{ $assignment->end_date?->format('M d, Y') ?: '—' }}</td>
-                                <td class="px-4 py-3 capitalize">{{ $assignment->status }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="px-4 py-8 text-center text-slate-500">No assignments for this room yet.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+            <x-live-table param="assignments_q" table="assignments" page-name="assignments_page" :value="$assignmentSearch" placeholder="Tenant or status" class="mt-4">
+                @include('admin.rooms.assignment-results')
+            </x-live-table>
         </div>
 
         <div class="mt-8 rounded-[28px] border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
@@ -160,89 +131,23 @@
                 @endif
             @endif
 
-            <div class="mt-6 overflow-hidden rounded-2xl border border-stone-200">
-                <table class="min-w-full text-left text-sm">
-                    <thead class="bg-[#fbf8f3] text-xs uppercase tracking-wider text-slate-500">
-                        <tr>
-                            <th class="px-4 py-3 font-medium">Payable</th>
-                            <th class="px-4 py-3 font-medium">Period</th>
-                            <th class="px-4 py-3 font-medium">Amount</th>
-                            <th class="px-4 py-3 font-medium">Billing</th>
-                            <th class="px-4 py-3 font-medium">Payment</th>
-                            <th class="px-4 py-3 font-medium"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-stone-100">
-                        @forelse ($room->roomPayables as $roomPayable)
-                            @php
-                                $billing = $roomPayable->latestBilling();
-                                $paymentStatus = $billing?->paymentStatus();
-                            @endphp
-                            <tr>
-                                <td class="px-4 py-3 font-medium">
-                                    @if ($roomPayable->payable)
-                                        <a href="{{ route('admin.payables.show', $roomPayable->payable) }}" class="text-teal-800 hover:underline">{{ $roomPayable->payable->title }}</a>
-                                    @else
-                                        —
-                                    @endif
-                                    @if ($roomPayable->isCurrent())
-                                        <span class="ml-2 inline-flex rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-800">Current</span>
-                                    @endif
-                                    @if ($roomPayable->payable?->isMetered() && $roomPayable->current_reading !== null)
-                                        <span class="mt-1 block text-xs font-normal text-slate-500">
-                                            Reading {{ number_format((float) $roomPayable->previous_reading, 2) }} → {{ number_format((float) $roomPayable->current_reading, 2) }}
-                                        </span>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3">{{ $roomPayable->periodLabel() }}</td>
-                                <td class="px-4 py-3">{{ number_format((float) $roomPayable->amount, 2) }}</td>
-                                <td class="px-4 py-3">{{ $roomPayable->frequencyLabel() }}</td>
-                                <td class="px-4 py-3">
-                                    @if ($paymentStatus === 'paid')
-                                        <span class="inline-flex rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-800">Paid</span>
-                                    @elseif ($paymentStatus === 'partial')
-                                        <span class="block text-sm font-medium text-amber-800">Partial</span>
-                                        <span class="mt-0.5 block text-xs text-slate-500">Remaining {{ number_format($billing->amountDue(), 2) }}</span>
-                                    @elseif ($paymentStatus === 'unpaid')
-                                        <span class="inline-flex rounded-full bg-stone-100 px-2.5 py-1 text-xs font-medium text-slate-600">Unpaid</span>
-                                    @else
-                                        <span class="text-slate-400">—</span>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a href="{{ route('admin.rooms.show', ['room' => $room, 'edit_payable' => $roomPayable->id]) }}" class="rounded-full border border-stone-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-teal-700 hover:text-teal-800">Edit</a>
-                                        @if ($roomPayable->isCurrent() && $roomPayable->isRecurring())
-                                            <form method="POST" action="{{ route('admin.rooms.payables.end', [$room, $roomPayable]) }}" onsubmit="return confirm('End this payable for the room?')">
-                                                @csrf
-                                                <button type="submit" class="rounded-full border border-stone-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-teal-700 hover:text-teal-800">End</button>
-                                            </form>
-                                        @endif
-                                        <form method="POST" action="{{ route('admin.rooms.payables.destroy', [$room, $roomPayable]) }}" onsubmit="return confirm('Delete this payable from the room?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50">Delete</button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="px-4 py-8 text-center text-slate-500">No payables assigned to this room yet.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                    @if ($room->roomPayables->isNotEmpty())
-                        <tfoot class="border-t border-stone-200 bg-[#fbf8f3]">
-                            <tr>
-                                <td class="px-4 py-3 font-semibold">Total to be paid</td>
-                                <td class="px-4 py-3 font-semibold">{{ number_format($room->amountToBePaid(), 2) }}</td>
-                                <td colspan="4" class="px-4 py-3 text-sm text-slate-500">Current charges only. Record monthly water and electricity payments on the Payments page.</td>
-                            </tr>
-                        </tfoot>
-                    @endif
-                </table>
-            </div>
+            <x-live-table param="payables_q" table="payables" page-name="payables_page" :value="$payableSearch" placeholder="Payable, period, or billing" class="mt-6">
+                @include('admin.rooms.payable-results')
+            </x-live-table>
+
+            @if ($payableTotal > 0)
+                <p class="mt-4 text-sm text-slate-600">
+                    <span class="font-semibold">Total to be paid:</span>
+                    <span class="tabular-nums font-semibold">{{ peso($payableTotal) }}</span>
+                    <span class="text-slate-500"> · Current charges only.</span>
+                </p>
+            @endif
         </div>
+
+        <p class="mt-6 text-sm text-slate-500">
+            Go to the
+            <a href="{{ route('admin.rooms.billing', $room) }}" class="font-semibold text-teal-800 hover:underline">Billing</a>
+            page to publish room billing.
+        </p>
     </section>
 @endsection

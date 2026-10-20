@@ -25,19 +25,29 @@ class RegisteredUserController extends Controller
             'last_name' => ['required', 'string', 'max:255'],
             'suffix' => ['nullable', 'string', 'max:20'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['required', 'string', 'max:30'],
+            'phone' => ['required', 'digits_between:1,30'],
             'tenant_type' => ['required', 'in:regular,bills_only'],
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => [
+                'required',
+                'confirmed',
+                Password::min(8)
+                    ->letters()
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols(),
+            ],
+            'terms_accepted' => ['accepted'],
             'privacy_consent' => ['accepted'],
         ]);
 
-        unset($validated['privacy_consent']);
+        unset($validated['privacy_consent'], $validated['terms_accepted']);
 
         $user = User::query()->create([
             ...$validated,
             'role' => 'tenant',
             'status' => 'active',
             'privacy_consent_at' => now(),
+            'terms_accepted_at' => now(),
         ]);
 
         Auth::login($user);

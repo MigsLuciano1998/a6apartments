@@ -12,8 +12,10 @@ use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tenant\AnnouncementController as TenantAnnouncementController;
 use App\Http\Controllers\Tenant\PaymentController as TenantPaymentController;
+use App\Http\Controllers\Tenant\RoomBillingController as TenantRoomBillingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -23,6 +25,8 @@ Route::get('/', function () {
 
     return redirect()->route('login');
 });
+
+Route::view('/terms', 'legal.terms')->name('terms');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -35,6 +39,12 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/user', [ProfileController::class, 'edit'])->name('user.edit');
+    Route::put('/user', [ProfileController::class, 'update'])->name('user.update');
+    Route::put('/user/password', [ProfileController::class, 'updatePassword'])->name('user.password');
+});
 
 Route::middleware(['auth', 'role:admin,manager'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
@@ -63,6 +73,7 @@ Route::middleware(['auth', 'role:admin,manager'])->prefix('admin')->name('admin.
 
 Route::middleware(['auth', 'role:tenant'])->prefix('tenant')->name('tenant.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'tenant'])->name('dashboard');
+    Route::get('/rooms/{room}/billing', [TenantRoomBillingController::class, 'show'])->name('rooms.billing');
     Route::get('/payments', [TenantPaymentController::class, 'index'])->name('payments.index');
     Route::get('/announcements', [TenantAnnouncementController::class, 'index'])->name('announcements.index');
 });

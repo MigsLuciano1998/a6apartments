@@ -59,16 +59,18 @@
                                     @else
                                         <label for="amount-{{ $payable->id }}" class="mt-3 mb-1.5 block text-sm font-medium">Amount</label>
                                         <div class="flex gap-2">
-                                            <input
-                                                id="amount-{{ $payable->id }}"
-                                                name="items[{{ $payable->id }}][amount]"
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                data-amount-input
-                                                value="{{ $line['amount'] }}"
-                                                class="w-full rounded-2xl border border-stone-200 px-4 py-2.5 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4"
-                                            >
+                                            <x-peso-field class="flex-1">
+                                                <input
+                                                    id="amount-{{ $payable->id }}"
+                                                    name="items[{{ $payable->id }}][amount]"
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    data-amount-input
+                                                    value="{{ $line['amount'] }}"
+                                                    class="w-full rounded-2xl border border-stone-200 py-2.5 pl-10 pr-4 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4"
+                                                >
+                                            </x-peso-field>
                                             <span class="inline-flex items-center rounded-2xl border border-stone-200 px-3 py-2 text-xs font-medium text-slate-500">Edit</span>
                                         </div>
                                         @error('items.'.$payable->id.'.amount')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
@@ -76,7 +78,7 @@
                                 </div>
                                 <div class="sm:w-40 sm:text-right">
                                     <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Sub total</p>
-                                    <p class="mt-1 text-xl font-semibold tabular-nums" data-subtotal>{{ number_format((float) ($line['amount'] ?? 0), 2) }}</p>
+                                    <p class="mt-1 text-xl font-semibold tabular-nums" data-subtotal>{{ peso($line['amount'] ?? 0) }}</p>
                                 </div>
                             </div>
                         </div>
@@ -85,10 +87,14 @@
 
                 <div class="mt-6 flex items-center justify-between border-t border-stone-200 pt-5">
                     <p class="text-sm font-medium text-slate-500">Total</p>
-                    <p class="text-2xl font-semibold tabular-nums" data-billing-total>0.00</p>
+                    <p class="text-2xl font-semibold tabular-nums" data-billing-total>₱0.00</p>
                 </div>
 
-                <div class="mt-6 flex flex-wrap items-center gap-3">
+                <p class="mt-6 text-sm text-slate-500">
+                    {{ $assignment?->user?->first_name ?: 'The tenant' }} will not be notified of billing unless it is published.
+                </p>
+
+                <div class="mt-4 flex flex-wrap items-center gap-3">
                     <button type="submit" @disabled(! $assignment) class="rounded-2xl bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50">
                         {{ $published ? 'Update published bill' : 'Publish' }}
                     </button>

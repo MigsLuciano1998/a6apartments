@@ -14,7 +14,7 @@
             </div>
             <div class="rounded-[28px] border border-stone-200 bg-white p-6 shadow-sm">
                 <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Monthly total expenses</p>
-                <p class="mt-2 text-2xl font-semibold tabular-nums text-rose-700">{{ number_format($monthlyTotal, 2) }}</p>
+                <p class="mt-2 text-2xl font-semibold tabular-nums text-rose-700">{{ peso($monthlyTotal) }}</p>
             </div>
         </section>
 
@@ -29,23 +29,9 @@
                 </a>
             </div>
 
-            <form method="GET" action="" class="mt-6">
-                <label for="q" class="mb-1.5 block text-sm font-medium">Search</label>
-                <input
-                    id="q"
-                    name="q"
-                    type="search"
-                    value="{{ $search }}"
-                    autocomplete="off"
-                    placeholder="Payable, cashier, method, status, or remarks"
-                    data-live-search
-                    class="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none ring-teal-700/20 transition focus:border-teal-700 focus:ring-4 sm:max-w-md"
-                >
-            </form>
-
-            <div class="mt-6" data-live-search-results>
+            <x-live-table table="expenses" :value="$search" placeholder="Payable, cashier, method, status, or remarks">
                 @include('admin.expenses.results')
-            </div>
+            </x-live-table>
         </section>
     </div>
 @endsection

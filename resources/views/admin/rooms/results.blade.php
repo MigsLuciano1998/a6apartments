@@ -17,7 +17,7 @@
                         <td class="px-4 py-3 font-medium">
                             <a href="{{ route('admin.rooms.show', $room) }}" class="text-teal-800 hover:underline">{{ $room->room_number }}</a>
                         </td>
-                        <td class="px-4 py-3">{{ $room->room_name }}</td>
+                        <td class="px-4 py-3">{{ $room->room_name ?: '—' }}</td>
                         <td class="px-4 py-3">
                             @if ($room->currentAssignment?->user?->role === 'tenant')
                                 <a href="{{ route('admin.tenants.show', $room->currentAssignment->user) }}" class="text-teal-800 hover:underline">{{ $room->currentAssignment->user->name }}</a>
@@ -27,7 +27,7 @@
                         </td>
                         <td class="px-4 py-3">
                             <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium {{ $room->status === 'active' ? 'bg-teal-50 text-teal-800' : 'bg-stone-100 text-slate-600' }}">
-                                {{ $room->status }}
+                                {{ $room->statusLabel() }}
                             </span>
                         </td>
                         <td class="max-w-xs truncate px-4 py-3 text-slate-500">{{ $room->remarks ?: '—' }}</td>

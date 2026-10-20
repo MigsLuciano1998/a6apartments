@@ -34,7 +34,7 @@
 
 <div>
     <label for="phone" class="mb-1.5 block text-sm font-medium">Phone</label>
-    <input id="phone" name="phone" type="text" value="{{ old('phone', $tenant?->phone) }}" required class="w-full rounded-2xl border border-stone-200 px-4 py-3 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4">
+    <input id="phone" name="phone" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="30" value="{{ old('phone', $tenant?->phone) }}" required class="w-full rounded-2xl border border-stone-200 px-4 py-3 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4">
     @error('phone')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
 </div>
 

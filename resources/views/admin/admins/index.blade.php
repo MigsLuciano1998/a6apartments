@@ -17,22 +17,8 @@
             </a>
         </div>
 
-        <form method="GET" action="" class="mt-6">
-            <label for="q" class="mb-1.5 block text-sm font-medium">Search</label>
-            <input
-                id="q"
-                name="q"
-                type="search"
-                value="{{ $search }}"
-                autocomplete="off"
-                placeholder="Name, email, phone, or status"
-                data-live-search
-                class="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none ring-teal-700/20 transition focus:border-teal-700 focus:ring-4 sm:max-w-md"
-            >
-        </form>
-
-        <div class="mt-6" data-live-search-results>
+        <x-live-table table="admins" :value="$search" placeholder="Name, email, phone, or status">
             @include('admin.admins.results')
-        </div>
+        </x-live-table>
     </section>
 @endsection

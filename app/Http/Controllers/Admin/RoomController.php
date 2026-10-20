@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Payable;
 use App\Models\Room;
-use App\Models\RoomAssignment;
 use App\Models\User;
 use App\Services\OutstandingBalanceService;
+use App\Support\LiveTable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -46,31 +46,65 @@ class RoomController extends Controller
 
     public function show(Request $request, Room $room): View
     {
+        $assignmentSearch = LiveTable::search($request, 'assignments_q');
+        $payableSearch = LiveTable::search($request, 'payables_q');
+
         $room->load([
             'currentAssignment.user',
             'currentAssignment.roomBillings.payments',
             'currentAssignment.roomBillings.roomPayable.payable',
-            'roomPayables' => fn ($query) => $query
+            'roomPayables.payable',
+            'roomAssignments.roomBillings.payments',
+        ]);
+
+        $assignments = LiveTable::paginate(
+            $room->roomAssignments()
+                ->with('user')
+                ->when($assignmentSearch !== '', function ($query) use ($assignmentSearch) {
+                    $query->where(function ($query) use ($assignmentSearch) {
+                        $query->where('status', 'like', "%{$assignmentSearch}%")
+                            ->orWhereHas('user', fn ($query) => $query->nameLike($assignmentSearch));
+                    });
+                })
+                ->latest('start_date'),
+            $request,
+            'assignments_page',
+        );
+
+        $roomPayables = LiveTable::paginate(
+            $room->roomPayables()
+                ->with(['payable', 'roomBillings.payments'])
+                ->when($payableSearch !== '', function ($query) use ($payableSearch) {
+                    $query->where(function ($query) use ($payableSearch) {
+                        $query->where('frequency', 'like', "%{$payableSearch}%")
+                            ->orWhere('amount', 'like', "%{$payableSearch}%")
+                            ->orWhereHas('payable', fn ($query) => $query->where('title', 'like', "%{$payableSearch}%"));
+                    });
+                })
                 ->orderByRaw('(end_date is null or end_date > ?) desc', [now()->toDateString()])
                 ->latest('start_date'),
-            'roomPayables.payable',
-            'roomPayables.roomBillings.payments',
-            'roomAssignments' => fn ($query) => $query->latest('start_date'),
-            'roomAssignments.user',
-            'roomAssignments.roomBillings.payments',
-            'roomAssignments.roomBillings.roomPayable.payable',
-        ]);
+            $request,
+            'payables_page',
+        );
+
+        if (LiveTable::isAjaxFor($request, 'assignments')) {
+            return view('admin.rooms.assignment-results', compact('room', 'assignments', 'assignmentSearch'));
+        }
+
+        if (LiveTable::isAjaxFor($request, 'payables')) {
+            return view('admin.rooms.payable-results', compact('room', 'roomPayables', 'payableSearch'));
+        }
 
         $availableTenants = User::query()
             ->where('role', 'tenant')
             ->where('status', 'active')
-            ->whereNotIn('id', $this->currentlyAssignedTenantIds())
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get();
 
-        $editingRoomPayable = $room->roomPayables
-            ->firstWhere('id', (int) $request->query('edit_payable'));
+        $editingRoomPayable = $room->roomPayables()
+            ->with(['payable', 'roomBillings.payments'])
+            ->find((int) $request->query('edit_payable'));
 
         $availablePayables = Payable::query()
             ->where('status', 'active')
@@ -83,6 +117,7 @@ class RoomController extends Controller
 
         $currentRemaining = $this->outstandingBalanceService->currentRemainingForAssignment($room->currentAssignment);
         $previousBalance = $this->outstandingBalanceService->previousBalanceForRoom($room);
+        $payableTotal = $room->amountToBePaid();
 
         return view('admin.rooms.show', compact(
             'room',
@@ -91,6 +126,11 @@ class RoomController extends Controller
             'editingRoomPayable',
             'currentRemaining',
             'previousBalance',
+            'assignments',
+            'assignmentSearch',
+            'roomPayables',
+            'payableSearch',
+            'payableTotal',
         ));
     }
 
@@ -108,10 +148,6 @@ class RoomController extends Controller
 
         if ($tenant->role !== 'tenant' || $tenant->status !== 'active') {
             return back()->with('error', 'Select an active tenant.');
-        }
-
-        if (RoomAssignment::query()->current()->where('user_id', $tenant->id)->exists()) {
-            return back()->with('error', 'That tenant is already assigned to a room.');
         }
 
         $room->roomAssignments()->create([
@@ -176,7 +212,7 @@ class RoomController extends Controller
     {
         return [
             'room_number' => ['required', 'string', 'max:50', Rule::unique('rooms', 'room_number')->ignore($roomId)],
-            'room_name' => ['required', 'string', 'max:255'],
+            'room_name' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'in:active,inactive'],
             'remarks' => ['nullable', 'string'],
         ];
@@ -192,6 +228,8 @@ class RoomController extends Controller
                         ->orWhere('room_name', 'like', "%{$search}%")
                         ->orWhere('status', 'like', "%{$search}%")
                         ->orWhere('remarks', 'like', "%{$search}%")
+                        ->when(str_contains(strtolower($search), 'available') && ! str_contains(strtolower($search), 'not'), fn ($query) => $query->orWhere('status', 'active'))
+                        ->when(str_contains(strtolower($search), 'not available'), fn ($query) => $query->orWhere('status', 'inactive'))
                         ->orWhereHas('currentAssignment.user', function ($query) use ($search) {
                             $query->where('first_name', 'like', "%{$search}%")
                                 ->orWhere('middle_name', 'like', "%{$search}%")
@@ -203,15 +241,5 @@ class RoomController extends Controller
             ->latest()
             ->paginate(10)
             ->withQueryString();
-    }
-
-    /**
-     * @return \Illuminate\Support\Collection<int, int>
-     */
-    private function currentlyAssignedTenantIds()
-    {
-        return RoomAssignment::query()
-            ->current()
-            ->pluck('user_id');
     }
 }

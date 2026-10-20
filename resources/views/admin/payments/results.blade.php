@@ -13,31 +13,32 @@
             <tbody class="divide-y divide-stone-100">
                 @forelse ($tenants as $tenant)
                     @php
-                        $billings = $tenant->currentAssignment?->roomBillings ?? collect();
+                        $billings = $tenant->currentAssignments->flatMap->roomBillings;
                         $unpaid = $billings->filter(fn ($billing) => ! $billing->isPaid());
                         $rentDue = (float) $unpaid->filter(fn ($billing) => $billing->isRent())->sum(fn ($billing) => $billing->amountDue());
                         $billsDue = (float) $unpaid->reject(fn ($billing) => $billing->isRent())->sum(fn ($billing) => $billing->amountDue());
+                        $rooms = $tenant->currentAssignments->map->room->filter();
                     @endphp
                     <tr class="bg-white">
                         <td class="px-4 py-3 font-medium">
                             <a href="{{ route('admin.tenants.show', $tenant) }}" class="text-teal-800 hover:underline">{{ $tenant->name }}</a>
                         </td>
                         <td class="px-4 py-3">
-                            @if ($tenant->currentAssignment?->room)
-                                <a href="{{ route('admin.rooms.show', $tenant->currentAssignment->room) }}" class="text-teal-800 hover:underline">{{ $tenant->currentAssignment->room->room_number }}</a>
-                            @else
+                            @forelse ($rooms as $room)
+                                <a href="{{ route('admin.rooms.show', $room) }}" class="text-teal-800 hover:underline">{{ $room->room_number }}</a>@if (! $loop->last), @endif
+                            @empty
                                 —
-                            @endif
+                            @endforelse
                         </td>
-                        <td class="px-4 py-3 tabular-nums">{{ number_format($rentDue, 2) }}</td>
-                        <td class="px-4 py-3 tabular-nums">{{ number_format($billsDue, 2) }}</td>
+                        <td class="px-4 py-3 tabular-nums">{{ peso($rentDue) }}</td>
+                        <td class="px-4 py-3 tabular-nums">{{ peso($billsDue) }}</td>
                         <td class="px-4 py-3">
                             <div class="flex justify-end">
                                 <button
                                     type="button"
                                     data-open-payment
                                     data-tenant-id="{{ $tenant->id }}"
-                                    @disabled(! $tenant->currentAssignment)
+                                    @disabled($rooms->isEmpty())
                                     class="rounded-full border border-stone-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-teal-700 hover:text-teal-800 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     Add Payment

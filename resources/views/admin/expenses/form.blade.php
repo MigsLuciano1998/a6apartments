@@ -22,7 +22,9 @@
 
 <div>
     <label for="amount" class="mb-1.5 block text-sm font-medium">Amount</label>
-    <input id="amount" name="amount" type="number" step="0.01" min="0.01" value="{{ old('amount', $expense?->amount) }}" required class="w-full rounded-2xl border border-stone-200 px-4 py-3 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4">
+    <x-peso-field>
+        <input id="amount" name="amount" type="number" step="0.01" min="0.01" value="{{ old('amount', $expense?->amount) }}" required class="w-full rounded-2xl border border-stone-200 py-3 pl-10 pr-4 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4">
+    </x-peso-field>
     @error('amount')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
 </div>
 
@@ -46,17 +48,19 @@
 
 <div class="{{ $status === 'partial_payment' ? '' : 'hidden' }}" data-partial-amount-wrap>
     <label for="partial_payment_amount" class="mb-1.5 block text-sm font-medium">Partial payment amount</label>
-    <input
-        id="partial_payment_amount"
-        name="partial_payment_amount"
-        type="number"
-        step="0.01"
-        min="0.01"
-        value="{{ old('partial_payment_amount', $expense?->partial_payment_amount) }}"
-        data-partial-payment-amount
-        @disabled($status !== 'partial_payment')
-        class="w-full rounded-2xl border border-stone-200 px-4 py-3 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4"
-    >
+    <x-peso-field>
+        <input
+            id="partial_payment_amount"
+            name="partial_payment_amount"
+            type="number"
+            step="0.01"
+            min="0.01"
+            value="{{ old('partial_payment_amount', $expense?->partial_payment_amount) }}"
+            data-partial-payment-amount
+            @disabled($status !== 'partial_payment')
+            class="w-full rounded-2xl border border-stone-200 py-3 pl-10 pr-4 text-sm outline-none ring-teal-700/20 focus:border-teal-700 focus:ring-4"
+        >
+    </x-peso-field>
     <p class="mt-1.5 text-xs text-slate-500">Must be less than the full amount. The monthly total uses this paid amount.</p>
     @error('partial_payment_amount')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
 </div>

@@ -19,11 +19,12 @@
                             <a href="{{ route('admin.tenants.show', $tenant) }}" class="text-teal-800 hover:underline">{{ $tenant->name }}</a>
                         </td>
                         <td class="px-4 py-3">
-                            @if ($tenant->currentAssignment?->room)
-                                <a href="{{ route('admin.rooms.show', $tenant->currentAssignment->room) }}" class="text-teal-800 hover:underline">{{ $tenant->currentAssignment->room->room_number }}</a>
-                            @else
+                            @php $rooms = $tenant->currentAssignments->map->room->filter(); @endphp
+                            @forelse ($rooms as $room)
+                                <a href="{{ route('admin.rooms.show', $room) }}" class="text-teal-800 hover:underline">{{ $room->room_number }}</a>@if (! $loop->last), @endif
+                            @empty
                                 —
-                            @endif
+                            @endforelse
                         </td>
                         <td class="px-4 py-3">{{ $tenant->email }}</td>
                         <td class="px-4 py-3">{{ $tenant->phone }}</td>

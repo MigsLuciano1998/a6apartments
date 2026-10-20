@@ -27,7 +27,7 @@ function evaluateBillingFormula(formula, currentReading, previousReading) {
 }
 
 function formatAmount(value) {
-    return Number(value || 0).toLocaleString(undefined, {
+    return '₱'+Number(value || 0).toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     });

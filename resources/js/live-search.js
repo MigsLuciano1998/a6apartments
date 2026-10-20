@@ -1,10 +1,14 @@
-function liveSearch(root = document) {
+function liveSearchWidget(root) {
     const input = root.querySelector('[data-live-search]');
     const target = root.querySelector('[data-live-search-results]');
 
     if (!input || !target) {
         return;
     }
+
+    const param = root.dataset.searchParam || input.getAttribute('name') || 'q';
+    const table = root.dataset.searchTable || '';
+    const pageName = root.dataset.pageName || 'page';
 
     let timer;
     let controller;
@@ -13,9 +17,19 @@ function liveSearch(root = document) {
         controller?.abort();
         controller = new AbortController();
 
+        const url = new URL(pageUrl ?? window.location.href, window.location.origin);
+
+        if (!pageUrl) {
+            url.searchParams.set(param, query);
+            url.searchParams.delete(pageName);
+        }
+
+        if (table) {
+            url.searchParams.set('_table', table);
+        }
+
         window.axios
-            .get(pageUrl ?? window.location.pathname, {
-                params: pageUrl ? undefined : { q: query },
+            .get(url.pathname + url.search, {
                 signal: controller.signal,
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
             })
@@ -50,6 +64,22 @@ function liveSearch(root = document) {
         event.preventDefault();
         load(input.value.trim(), link.href);
     });
+}
+
+function liveSearch(root = document) {
+    const widgets = [...root.querySelectorAll('[data-live-search-table]')];
+
+    if (widgets.length) {
+        widgets.forEach((widget) => liveSearchWidget(widget));
+        return;
+    }
+
+    const input = root.querySelector('[data-live-search]');
+    const target = root.querySelector('[data-live-search-results]');
+
+    if (input && target) {
+        liveSearchWidget(root);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => liveSearch());

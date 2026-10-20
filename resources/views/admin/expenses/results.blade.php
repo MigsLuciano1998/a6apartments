@@ -20,13 +20,13 @@
                         <td class="px-4 py-3 font-medium">
                             <a href="{{ route('admin.expenses.show', $expense) }}" class="text-teal-800 hover:underline">{{ $expense->payable?->title ?? '—' }}</a>
                         </td>
-                        <td class="px-4 py-3 tabular-nums">{{ number_format((float) $expense->amount, 2) }}</td>
-                        <td class="px-4 py-3 tabular-nums">{{ number_format($expense->amountPaid(), 2) }}</td>
+                        <td class="px-4 py-3 tabular-nums">{{ peso($expense->amount) }}</td>
+                        <td class="px-4 py-3 tabular-nums">{{ peso($expense->amountPaid()) }}</td>
                         <td class="px-4 py-3">{{ $expense->paymentMethodLabel() }}</td>
                         <td class="px-4 py-3">
                             @if ($expense->isPartial())
                                 <span class="block text-sm font-medium text-amber-800">{{ $expense->statusLabel() }}</span>
-                                <span class="mt-0.5 block text-xs text-slate-500">Remaining {{ number_format($expense->amountRemaining(), 2) }}</span>
+                                <span class="mt-0.5 block text-xs text-slate-500">Remaining {{ peso($expense->amountRemaining()) }}</span>
                             @else
                                 <span class="inline-flex rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-800">{{ $expense->statusLabel() }}</span>
                             @endif

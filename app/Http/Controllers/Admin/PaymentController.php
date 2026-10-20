@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\RoomBilling;
 use App\Models\User;
 use App\Services\OutstandingBalanceService;
+use App\Support\LiveTable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,22 +26,11 @@ class PaymentController extends Controller
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('q', ''));
+        $paymentsSearch = LiveTable::search($request, 'payments_q');
+        $balancesSearch = LiveTable::search($request, 'balances_q');
         $month = now();
         $tenants = $this->filteredTenants($search);
-        $totals = $this->monthTotals($month);
-
-        if ($request->ajax()) {
-            return view('admin.payments.results', compact('tenants', 'search', 'month'));
-        }
-
-        $payableTenants = User::query()
-            ->where('role', 'tenant')
-            ->whereHas('currentAssignment')
-            ->orderBy('first_name')
-            ->orderBy('last_name')
-            ->get();
-
-        $paymentsMade = $this->paymentsMadeThisMonth($month);
+        $paymentsMade = $this->paymentsMadeThisMonth($request, $month, $paymentsSearch);
         $allPreviousBalances = $this->outstandingBalanceService->previousBalances($month)
             ->sortByDesc(fn (RoomBilling $billing) => sprintf(
                 '%s-%020d',
@@ -48,12 +38,36 @@ class PaymentController extends Controller
                 $billing->id
             ))
             ->values();
+        $filteredPreviousBalances = $allPreviousBalances->filter(function (RoomBilling $billing) use ($balancesSearch) {
+            return LiveTable::matches($billing->periodLabel(), $balancesSearch)
+                || LiveTable::matches($billing->roomAssignment?->user?->name, $balancesSearch)
+                || LiveTable::matches($billing->roomAssignment?->room?->room_number, $balancesSearch)
+                || LiveTable::matches($billing->roomPayable?->payable?->title, $balancesSearch);
+        })->values();
+        $previousBalances = $this->paginatePreviousBalances($request, $filteredPreviousBalances);
+
+        if ($request->ajax()) {
+            return match ($request->query('_table', 'tenants')) {
+                'payments' => view('admin.payments.made-results', compact('paymentsMade', 'paymentsSearch')),
+                'balances' => view('admin.payments.balance-results', compact('previousBalances', 'balancesSearch')),
+                default => view('admin.payments.results', compact('tenants', 'search', 'month')),
+            };
+        }
+
+        $totals = $this->monthTotals($month);
+        $payableTenants = User::query()
+            ->where('role', 'tenant')
+            ->whereHas('currentAssignments')
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get();
         $previousTotal = $this->outstandingBalanceService->totalRemaining($allPreviousBalances);
-        $previousBalances = $this->paginatePreviousBalances($request, $allPreviousBalances);
 
         return view('admin.payments.index', compact(
             'tenants',
             'search',
+            'paymentsSearch',
+            'balancesSearch',
             'month',
             'totals',
             'payableTenants',
@@ -67,9 +81,13 @@ class PaymentController extends Controller
     {
         abort_unless($tenant->role === 'tenant', 404);
 
-        $assignment = $tenant->currentAssignment;
+        $assignments = $tenant->currentAssignments()->with([
+            'room',
+            'roomBillings.roomPayable.payable',
+            'roomBillings.payments',
+        ])->get();
 
-        if (! $assignment) {
+        if ($assignments->isEmpty()) {
             return response()->json([
                 'tenant' => ['id' => $tenant->id, 'name' => $tenant->name],
                 'room' => null,
@@ -78,26 +96,28 @@ class PaymentController extends Controller
             ]);
         }
 
-        $assignment->load([
-            'room',
-            'roomBillings.roomPayable.payable',
-            'roomBillings.payments',
-        ]);
+        $payables = $assignments
+            ->flatMap(fn ($assignment) => $assignment->roomBillings->map(function (RoomBilling $billing) use ($assignment) {
+                $billing->setRelation('roomAssignment', $assignment);
 
-        $payables = $assignment->roomBillings
+                return $billing;
+            }))
             ->filter(fn (RoomBilling $billing) => $this->canRecordPayment($billing))
             ->map(fn (RoomBilling $billing) => [
                 'billing_id' => $billing->id,
                 'title' => $billing->roomPayable?->payable?->title ?? 'Payable',
                 'amount' => $billing->amountDue(),
                 'frequency' => $this->paymentLabel($billing),
+                'room' => $billing->roomAssignment?->room?->room_number,
                 'is_rent' => $billing->isRent(),
             ])
             ->values();
 
+        $rooms = $assignments->map(fn ($assignment) => $assignment->room?->room_number)->filter()->unique()->implode(', ');
+
         return response()->json([
             'tenant' => ['id' => $tenant->id, 'name' => $tenant->name],
-            'room' => $assignment->room?->room_number,
+            'room' => $rooms ?: null,
             'payables' => $payables,
             'message' => $payables->isEmpty() ? 'No unpaid payables to record.' : null,
         ]);
@@ -132,17 +152,17 @@ class PaymentController extends Controller
 
         abort_unless($tenant->role === 'tenant', 404);
 
-        $assignment = $tenant->currentAssignment;
+        $assignmentIds = $tenant->roomAssignments()->pluck('id');
         $paidCount = 0;
 
-        DB::transaction(function () use ($validated, $assignment, $payPartial, &$paidCount) {
+        DB::transaction(function () use ($validated, $assignmentIds, $payPartial, &$paidCount) {
             $billings = RoomBilling::query()
                 ->with(['roomPayable.payable', 'payments'])
                 ->whereIn('id', $validated['billing_ids'])
                 ->get();
 
             foreach ($billings as $billing) {
-                if ($assignment && $billing->room_assignment_id !== $assignment->id) {
+                if (! $assignmentIds->contains($billing->room_assignment_id)) {
                     continue;
                 }
 
@@ -163,7 +183,7 @@ class PaymentController extends Controller
 
                     if ($amount > $amountDue) {
                         throw ValidationException::withMessages([
-                            'partial_amount' => 'Amount cannot exceed the remaining balance of '.number_format($amountDue, 2).'.',
+                            'partial_amount' => 'Amount cannot exceed the remaining balance of '.peso($amountDue).'.',
                         ]);
                     }
                 }
@@ -232,13 +252,13 @@ class PaymentController extends Controller
         return User::query()
             ->where('role', 'tenant')
             ->with([
-                'currentAssignment.room',
-                'currentAssignment.roomBillings' => fn ($query) => $query->published()->whereBetween('due_date', [
+                'currentAssignments.room',
+                'currentAssignments.roomBillings' => fn ($query) => $query->published()->whereBetween('due_date', [
                     $month->copy()->startOfMonth()->toDateString(),
                     $month->copy()->endOfMonth()->toDateString(),
                 ]),
-                'currentAssignment.roomBillings.roomPayable.payable',
-                'currentAssignment.roomBillings.payments',
+                'currentAssignments.roomBillings.roomPayable.payable',
+                'currentAssignments.roomBillings.payments',
             ])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
@@ -247,7 +267,7 @@ class PaymentController extends Controller
                         ->orWhere('last_name', 'like', "%{$search}%")
                         ->orWhere('suffix', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhereHas('currentAssignment.room', function ($query) use ($search) {
+                        ->orWhereHas('currentAssignments.room', function ($query) use ($search) {
                             $query->where('room_number', 'like', "%{$search}%")
                                 ->orWhere('room_name', 'like', "%{$search}%");
                         });
@@ -313,18 +333,34 @@ class PaymentController extends Controller
         ))->withQueryString();
     }
 
-    private function paymentsMadeThisMonth($month)
+    private function paymentsMadeThisMonth(Request $request, $month, string $search)
     {
-        return Payment::query()
-            ->with([
-                'roomBilling.roomPayable.payable',
-                'roomBilling.roomAssignment.user',
-                'roomBilling.roomAssignment.room',
-            ])
-            ->whereDate('payment_date', '>=', $month->copy()->startOfMonth()->toDateString())
-            ->whereDate('payment_date', '<=', $month->copy()->endOfMonth()->toDateString())
-            ->latest('payment_date')
-            ->latest('id')
-            ->get();
+        return LiveTable::paginate(
+            Payment::query()
+                ->with([
+                    'roomBilling.roomPayable.payable',
+                    'roomBilling.roomAssignment.user',
+                    'roomBilling.roomAssignment.room',
+                ])
+                ->whereDate('payment_date', '>=', $month->copy()->startOfMonth()->toDateString())
+                ->whereDate('payment_date', '<=', $month->copy()->endOfMonth()->toDateString())
+                ->when($search !== '', function ($query) use ($search) {
+                    $query->where(function ($query) use ($search) {
+                        $query->where('payment_method', 'like', "%{$search}%")
+                            ->orWhere('reference_number', 'like', "%{$search}%")
+                            ->orWhere('amount', 'like', "%{$search}%")
+                            ->orWhereHas('roomBilling.roomPayable.payable', fn ($query) => $query->where('title', 'like', "%{$search}%"))
+                            ->orWhereHas('roomBilling.roomAssignment.user', fn ($query) => $query->nameLike($search))
+                            ->orWhereHas('roomBilling.roomAssignment.room', function ($query) use ($search) {
+                                $query->where('room_number', 'like', "%{$search}%")
+                                    ->orWhere('room_name', 'like', "%{$search}%");
+                            });
+                    });
+                })
+                ->latest('payment_date')
+                ->latest('id'),
+            $request,
+            'payments_page',
+        );
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payable;
+use App\Support\LiveTable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -39,14 +40,33 @@ class PayableController extends Controller
             ->with('success', 'Payable created successfully.');
     }
 
-    public function show(Payable $payable): View
+    public function show(Request $request, Payable $payable): View
     {
-        $payable->load([
-            'roomPayables' => fn ($query) => $query->latest('start_date'),
-            'roomPayables.room',
-        ]);
+        $roomSearch = LiveTable::search($request, 'rooms_q');
 
-        return view('admin.payables.show', compact('payable'));
+        $roomPayables = LiveTable::paginate(
+            $payable->roomPayables()
+                ->with('room')
+                ->when($roomSearch !== '', function ($query) use ($roomSearch) {
+                    $query->where(function ($query) use ($roomSearch) {
+                        $query->where('frequency', 'like', "%{$roomSearch}%")
+                            ->orWhere('amount', 'like', "%{$roomSearch}%")
+                            ->orWhereHas('room', function ($query) use ($roomSearch) {
+                                $query->where('room_number', 'like', "%{$roomSearch}%")
+                                    ->orWhere('room_name', 'like', "%{$roomSearch}%");
+                            });
+                    });
+                })
+                ->latest('start_date'),
+            $request,
+            'rooms_page',
+        );
+
+        if (LiveTable::isAjaxFor($request, 'rooms')) {
+            return view('admin.payables.room-results', compact('roomPayables', 'roomSearch'));
+        }
+
+        return view('admin.payables.show', compact('payable', 'roomPayables', 'roomSearch'));
     }
 
     public function edit(Payable $payable): View

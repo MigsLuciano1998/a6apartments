@@ -12,7 +12,7 @@
                 <h2 class="text-2xl font-semibold">
                     {{ $expense->payable?->title ?? 'Expense' }}
                     <span class="mx-2 font-normal text-slate-300">|</span>
-                    {{ number_format((float) $expense->amount, 2) }}
+                    {{ peso($expense->amount) }}
                     <span class="mx-2 font-normal text-slate-300">|</span>
                     <span class="inline-flex align-middle rounded-full px-2.5 py-0.5 text-xs font-medium {{ $expense->isPartial() ? 'bg-amber-50 text-amber-800' : 'bg-teal-50 text-teal-800' }}">{{ $expense->statusLabel() }}</span>
                 </h2>
@@ -36,16 +36,16 @@
                 </div>
                 <div class="rounded-2xl bg-[#fbf8f3] p-4">
                     <dt class="text-xs uppercase tracking-wider text-slate-400">Amount</dt>
-                    <dd class="mt-1 font-medium tabular-nums">{{ number_format((float) $expense->amount, 2) }}</dd>
+                    <dd class="mt-1 font-medium tabular-nums">{{ peso($expense->amount) }}</dd>
                 </div>
                 <div class="rounded-2xl bg-[#fbf8f3] p-4">
                     <dt class="text-xs uppercase tracking-wider text-slate-400">Amount paid</dt>
-                    <dd class="mt-1 font-medium tabular-nums">{{ number_format($expense->amountPaid(), 2) }}</dd>
+                    <dd class="mt-1 font-medium tabular-nums">{{ peso($expense->amountPaid()) }}</dd>
                 </div>
                 @if ($expense->isPartial())
                     <div class="rounded-2xl bg-[#fbf8f3] p-4">
                         <dt class="text-xs uppercase tracking-wider text-slate-400">Remaining</dt>
-                        <dd class="mt-1 font-medium tabular-nums text-rose-700">{{ number_format($expense->amountRemaining(), 2) }}</dd>
+                        <dd class="mt-1 font-medium tabular-nums text-rose-700">{{ peso($expense->amountRemaining()) }}</dd>
                     </div>
                 @endif
                 <div class="rounded-2xl bg-[#fbf8f3] p-4">

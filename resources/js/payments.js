@@ -22,7 +22,7 @@ function paymentsPage() {
 
     const selectedPayables = () => [...modal.querySelectorAll('input[name="billing_ids[]"]:checked')];
 
-    const formatAmount = (value) => Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const formatAmount = (value) => '₱'+Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     const updatePartialUi = () => {
         const checked = selectedPayables();
@@ -117,7 +117,7 @@ function paymentsPage() {
                 <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-stone-200 px-4 py-3 hover:border-teal-700">
                     <input type="checkbox" name="billing_ids[]" value="${item.billing_id}" data-amount="${item.amount}" class="mt-1 h-4 w-4 rounded border-stone-300 text-teal-700 focus:ring-teal-700">
                     <span class="flex-1">
-                        <span class="block text-sm font-medium">${item.title}</span>
+                        <span class="block text-sm font-medium">${item.title}${item.room ? ` · Room ${item.room}` : ''}</span>
                         <span class="block text-xs text-slate-500">${item.frequency}</span>
                     </span>
                     <span class="text-sm font-semibold tabular-nums">${formatAmount(item.amount)}</span>

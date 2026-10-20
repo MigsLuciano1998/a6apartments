@@ -27,6 +27,7 @@ class User extends Authenticatable
         'tenant_type',
         'status',
         'privacy_consent_at',
+        'terms_accepted_at',
         'password',
     ];
 
@@ -46,6 +47,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'privacy_consent_at' => 'datetime',
+            'terms_accepted_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -58,6 +60,16 @@ class User extends Authenticatable
             $this->last_name,
             $this->suffix,
         ])->filter()->implode(' ');
+    }
+
+    public function scopeNameLike($query, string $search)
+    {
+        return $query->where(function ($query) use ($search) {
+            $query->where('first_name', 'like', "%{$search}%")
+                ->orWhere('middle_name', 'like', "%{$search}%")
+                ->orWhere('last_name', 'like', "%{$search}%")
+                ->orWhere('suffix', 'like', "%{$search}%");
+        });
     }
 
     public function expensesRecorded(): HasMany
@@ -80,6 +92,11 @@ class User extends Authenticatable
                             ->orWhereDate('end_date', '>=', now()->toDateString());
                     });
             });
+    }
+
+    public function currentAssignments(): HasMany
+    {
+        return $this->hasMany(RoomAssignment::class)->current();
     }
 
     public function isStaff(): bool
