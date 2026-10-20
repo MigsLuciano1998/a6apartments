@@ -6,7 +6,7 @@
 @section('heading', 'Room info')
 
 @section('content')
-    <section class="mx-auto max-w-4xl">
+    <section class="mx-auto max-w-6xl">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <h2 class="text-2xl font-semibold">
@@ -111,8 +111,8 @@
                     @csrf
                     @method('PUT')
                     @include('admin.rooms.payable-form-fields')
-                    <div class="flex items-end gap-2">
-                        <button type="submit" class="rounded-2xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Update</button>
+                    <div class="flex gap-2 self-end sm:col-start-2 lg:col-start-3">
+                        <button type="submit" class="min-w-0 flex-1 rounded-2xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800">Update</button>
                         <a href="{{ route('admin.rooms.show', $room) }}" class="rounded-2xl border border-stone-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:border-teal-700 hover:text-teal-800">Cancel</a>
                     </div>
                 </form>
@@ -120,7 +120,7 @@
                 <form method="POST" action="{{ route('admin.rooms.payables.store', $room) }}" data-room-payable-form class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     @csrf
                     @include('admin.rooms.payable-form-fields')
-                    <div class="flex items-end">
+                    <div class="self-end sm:col-start-2 lg:col-start-3">
                         <button type="submit" @disabled($availablePayables->isEmpty()) class="w-full rounded-2xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50">
                             Add payable
                         </button>

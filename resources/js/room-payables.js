@@ -66,6 +66,7 @@ function bindRoomPayableForm(form) {
 
         meterFields.classList.toggle('hidden', !metered);
         standardFields.classList.toggle('hidden', metered);
+        standardFields.classList.toggle('contents', !metered);
         setDisabled(standardFields, metered || payableSelect.disabled);
         setDisabled(meterFields, !metered || payableSelect.disabled);
 

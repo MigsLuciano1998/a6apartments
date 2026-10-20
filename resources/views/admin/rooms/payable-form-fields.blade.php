@@ -31,7 +31,7 @@
     @error('payables_id')<p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>@enderror
 </div>
 
-<div data-standard-fields class="col-span-full grid gap-3 sm:grid-cols-2 lg:grid-cols-3 {{ $isMetered ? 'hidden' : '' }}">
+<div data-standard-fields class="{{ $isMetered ? 'hidden' : 'contents' }}">
     <div>
         <label for="amount" class="mb-1.5 block text-sm font-medium">Amount</label>
         <x-peso-field>
